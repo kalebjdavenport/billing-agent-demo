@@ -1,5 +1,4 @@
 import { tool } from "@anthropic-ai/claude-agent-sdk";
-import { z } from "zod";
 import {
   transactions,
   filterTransactions,
@@ -13,15 +12,25 @@ import { queryTransactionsSchema, getBillingSummarySchema } from "./schemas";
 // Maximum rows to display before truncating (all data is still fetched internally)
 const MAX_TABLE_ROWS = 8;
 
-// Helper to format transactions as a markdown table (with truncation)
+// Maximum categories to display before truncating
+const MAX_BREAKDOWN_ROWS = 12;
+
+// Helper to format transactions as a markdown table (with truncation and metadata)
 function formatTransactionsTable(txs: BillingTransaction[]): string {
   if (txs.length === 0) {
-    return "No transactions found.";
+    // Provide helpful context when no results found
+    const range = getDataDateRange(transactions);
+    const services = getUniqueServices(transactions);
+    return `No transactions found for the given filters.\n\n` +
+      `**Available data:**\n` +
+      `- Date range: ${range.earliest} to ${range.latest}\n` +
+      `- Services: ${services.slice(0, 5).join(", ")}${services.length > 5 ? ` (+${services.length - 5} more)` : ""}`;
   }
 
   const header = "| ID | Date | Amount | Service | Status |\n|-----|------|--------|---------|--------|";
   const displayTxs = txs.slice(0, MAX_TABLE_ROWS);
   const remaining = txs.length - displayTxs.length;
+  const totalAmount = txs.reduce((sum, tx) => sum + tx.amount, 0);
 
   const rows = displayTxs.map(tx =>
     `| ${tx.id} | ${tx.date} | $${tx.amount.toFixed(2)} | ${tx.service} | ${tx.status} |`
@@ -30,16 +39,15 @@ function formatTransactionsTable(txs: BillingTransaction[]): string {
   let table = `${header}\n${rows}`;
 
   if (remaining > 0) {
-    // Calculate total of remaining transactions
     const remainingTotal = txs.slice(MAX_TABLE_ROWS).reduce((sum, tx) => sum + tx.amount, 0);
     table += `\n\n*... and ${remaining} more transaction${remaining !== 1 ? 's' : ''} ($${remainingTotal.toFixed(2)} additional)*`;
   }
 
+  // Add metadata summary
+  table += `\n\n**Summary:** ${txs.length} transactions totaling $${totalAmount.toFixed(2)}`;
+
   return table;
 }
-
-// Maximum categories to display before truncating
-const MAX_BREAKDOWN_ROWS = 12;
 
 // Helper to format breakdown as a markdown table (with truncation)
 function formatBreakdownTable(breakdown: Record<string, number>): string {
@@ -65,7 +73,7 @@ function formatBreakdownTable(breakdown: Record<string, number>): string {
 
 export const queryTransactions = tool(
   "query_transactions",
-  "Query billing transactions with optional filters for date range, service, and status. Returns matching transactions.",
+  "Query billing transactions with optional filters for date range, service, and status. Returns matching transactions with a summary.",
   queryTransactionsSchema,
   async (args) => {
     const results = filterTransactions(transactions, {
@@ -90,13 +98,26 @@ export const queryTransactions = tool(
 
 export const getBillingSummary = tool(
   "get_billing_summary",
-  "Get aggregated billing totals for a date range, optionally grouped by service, month, or status.",
+  "Get aggregated billing totals for a date range, optionally grouped by service, month, or status. Returns total amount and transaction count.",
   getBillingSummarySchema,
   async (args) => {
     const filtered = filterTransactions(transactions, {
       start_date: args.start_date,
       end_date: args.end_date,
     });
+
+    if (filtered.length === 0) {
+      const range = getDataDateRange(transactions);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `**No transactions found** for the specified date range.\n\n` +
+              `Available data: ${range.earliest} to ${range.latest}`,
+          },
+        ],
+      };
+    }
 
     const total = filtered.reduce((sum: number, tx) => sum + tx.amount, 0);
     const breakdown = args.group_by ? aggregateByField(filtered, args.group_by) : undefined;
@@ -121,7 +142,7 @@ export const getBillingSummary = tool(
 
 export const listServices = tool(
   "list_services",
-  "List all unique services available in the billing data.",
+  "List all unique services available in the billing data. Use this to discover valid service names for filtering.",
   {},
   async () => {
     const services = getUniqueServices(transactions);
@@ -141,12 +162,13 @@ export const listServices = tool(
 
 export const getDateRange = tool(
   "get_date_range",
-  "Get the date range of available billing data (earliest and latest dates).",
+  "Get the date range of available billing data (earliest and latest dates). Use this to understand data boundaries before querying.",
   {},
   async () => {
     const range = getDataDateRange(transactions);
+    const totalCount = transactions.length;
 
-    const markdown = `**Data Range:**\n\n| | Date |\n|--|------|\n| Earliest | ${range.earliest} |\n| Latest | ${range.latest} |`;
+    const markdown = `**Data Range:**\n\n| | Date |\n|--|------|\n| Earliest | ${range.earliest} |\n| Latest | ${range.latest} |\n\n*${totalCount} total transactions available*`;
 
     return {
       content: [

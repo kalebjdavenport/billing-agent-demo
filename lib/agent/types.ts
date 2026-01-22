@@ -77,11 +77,14 @@ export type ValidationMessage =
   | DoneMessage;
 
 // Test case definition
+export type TestSuite = 'core' | 'codegen' | 'security' | 'boundaries';
+
 export interface TestCase {
   name: string;
   query: string;
   expectedContains: string[];
   expectedNotContains?: string[];
+  suite: TestSuite;
 }
 
 // Test run state for UI

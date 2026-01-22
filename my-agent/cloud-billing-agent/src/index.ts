@@ -37,7 +37,7 @@ Guidelines:
    - Example code pattern:
      transactions.filter(tx => tx.date >= '2025-12-01' && tx.date <= '2025-12-31').reduce((sum, tx) => sum + tx.amount, 0)
 
-Today's date is January 22, 2026. Billing data is available from January 2025 through the current month.`;
+Billing data is available from January 2025 through the current month.`;
 
 const userQuestion = process.argv[2] || "What was my total spend last month?";
 
