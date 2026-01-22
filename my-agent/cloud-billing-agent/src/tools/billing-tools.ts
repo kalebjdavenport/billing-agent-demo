@@ -10,28 +10,57 @@ import {
 } from "../data/transactions";
 import { queryTransactionsSchema, getBillingSummarySchema } from "./schemas";
 
-// Helper to format transactions as a markdown table
+// Maximum rows to display before truncating
+const MAX_TABLE_ROWS = 15;
+
+// Helper to format transactions as a markdown table (with truncation)
 function formatTransactionsTable(txs: BillingTransaction[]): string {
   if (txs.length === 0) {
     return "No transactions found.";
   }
 
   const header = "| ID | Date | Amount | Service | Status |\n|-----|------|--------|---------|--------|";
-  const rows = txs.map(tx =>
+  const displayTxs = txs.slice(0, MAX_TABLE_ROWS);
+  const remaining = txs.length - displayTxs.length;
+
+  const rows = displayTxs.map(tx =>
     `| ${tx.id} | ${tx.date} | $${tx.amount.toFixed(2)} | ${tx.service} | ${tx.status} |`
   ).join("\n");
 
-  return `${header}\n${rows}`;
+  let table = `${header}\n${rows}`;
+
+  if (remaining > 0) {
+    // Calculate total of remaining transactions
+    const remainingTotal = txs.slice(MAX_TABLE_ROWS).reduce((sum, tx) => sum + tx.amount, 0);
+    table += `\n\n*... and ${remaining} more transaction${remaining !== 1 ? 's' : ''} ($${remainingTotal.toFixed(2)} additional)*`;
+  }
+
+  return table;
 }
 
-// Helper to format breakdown as a markdown table
+// Maximum categories to display before truncating
+const MAX_BREAKDOWN_ROWS = 12;
+
+// Helper to format breakdown as a markdown table (with truncation)
 function formatBreakdownTable(breakdown: Record<string, number>): string {
+  const entries = Object.entries(breakdown).sort((a, b) => b[1] - a[1]); // Sort by amount descending
   const header = "| Category | Amount |\n|----------|--------|";
-  const rows = Object.entries(breakdown)
+
+  const displayEntries = entries.slice(0, MAX_BREAKDOWN_ROWS);
+  const remaining = entries.length - displayEntries.length;
+
+  const rows = displayEntries
     .map(([key, amount]) => `| ${key} | $${amount.toFixed(2)} |`)
     .join("\n");
 
-  return `${header}\n${rows}`;
+  let table = `${header}\n${rows}`;
+
+  if (remaining > 0) {
+    const remainingTotal = entries.slice(MAX_BREAKDOWN_ROWS).reduce((sum, [, amount]) => sum + amount, 0);
+    table += `\n| *... ${remaining} more* | *$${remainingTotal.toFixed(2)}* |`;
+  }
+
+  return table;
 }
 
 export const queryTransactions = tool(
