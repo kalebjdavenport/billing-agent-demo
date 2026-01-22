@@ -11,7 +11,7 @@ import { SearchHistory } from './SearchHistory';
 export function Chat() {
   const { messages, isStreaming, error, sendMessage, clearMessages } = useAgentStream();
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleSendMessage = useCallback(
     (message: string) => {
@@ -50,13 +50,13 @@ export function Chat() {
               {/* Sidebar toggle */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg transition-smooth btn-lift"
+                className="text-sm px-3 py-1.5 rounded-lg transition-smooth btn-lift flex items-center gap-1.5"
                 style={{ color: 'var(--text-secondary)', background: 'var(--user-message-bg)' }}
-                title={sidebarOpen ? 'Hide history' : 'Show history'}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
+                History
               </button>
               {/* Logo */}
               <div
