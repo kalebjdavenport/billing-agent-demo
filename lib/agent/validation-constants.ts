@@ -123,23 +123,24 @@ const BOUNDARY_TESTS: TestCase[] = [
     suite: 'boundaries',
     name: 'Data before available range',
     query: 'What was my AWS bill in December 2024?',
-    // Data only exists from January 2025 - should indicate no data available
-    expectedContains: ['no', 'No', 'available', '2025', 'January'],
+    // Should immediately explain no data before January 2025, offer to show data from January 2025
+    expectedContains: ['January 2025', "don't have", 'before'],
+    expectedNotContains: ['$0', '0.00', 'total of $0', 'no charges'],
   },
   {
     suite: 'boundaries',
     name: 'Predictions not supported',
     query: 'Predict my AWS bill for February 2026',
-    // Agent should not make predictions, should explain it can only analyze historical data
-    expectedContains: ['billing', 'Billing', 'historical', 'cannot', 'can only', "can't", 'history'],
-    expectedNotContains: ['predict', 'Predict', 'forecast', 'will be', 'estimate'],
+    // Agent should immediately decline without calling tools, offer to show historical trends
+    expectedContains: ['historical', 'only', 'trends', 'recent', 'spending'],
+    expectedNotContains: ['predict', 'Predict', 'forecast', 'will be', '$'],
   },
   {
     suite: 'boundaries',
     name: 'Service not in data',
     query: 'How much did I spend on DynamoDB last month?',
-    // DynamoDB is not in our transaction data - should indicate no data found
-    expectedContains: ['no', 'No', '0', 'found', 'available'],
+    // DynamoDB is not in our transaction data - should explain no DynamoDB data and list available services
+    expectedContains: ['DynamoDB', 'no', 'EC2', 'S3', 'RDS'],
   },
 ];
 

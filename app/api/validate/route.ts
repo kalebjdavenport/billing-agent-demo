@@ -1,12 +1,18 @@
-import { runValidation } from '@/lib/agent/validation';
+import { runValidation, ValidSuite } from '@/lib/agent/validation';
 
 // Disable static generation for this route
 export const dynamic = 'force-dynamic';
+
+// Valid suite values
+const VALID_SUITES = ['all', 'core', 'codegen', 'security', 'boundaries'] as const;
 
 /**
  * POST /api/validate
  *
  * Streams validation test results using Server-Sent Events (SSE).
+ *
+ * Request body (optional):
+ * - { "suite": "all" | "core" | "codegen" | "security" | "boundaries" }
  *
  * Response: SSE stream with events:
  * - data: {"type":"test_start","testIndex":0}
@@ -19,13 +25,24 @@ export const dynamic = 'force-dynamic';
  * - data: {"type":"test_result","testIndex":0,"passed":true,"response":"..."}
  * - data: {"type":"done"}
  */
-export async function POST() {
+export async function POST(request: Request) {
+  // Parse suite from request body
+  let suite: ValidSuite = 'all';
+  try {
+    const body = await request.json().catch(() => ({}));
+    if (body.suite && VALID_SUITES.includes(body.suite)) {
+      suite = body.suite as ValidSuite;
+    }
+  } catch {
+    // Default to 'all' if parsing fails
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const message of runValidation()) {
+        for await (const message of runValidation(suite)) {
           const data = `data: ${JSON.stringify(message)}\n\n`;
           controller.enqueue(encoder.encode(data));
         }
@@ -60,6 +77,7 @@ export async function GET() {
     JSON.stringify({
       status: 'ok',
       message: 'Validation API is running. Send POST requests to run the test suite.',
+      suites: VALID_SUITES,
     }),
     {
       headers: { 'Content-Type': 'application/json' },

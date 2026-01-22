@@ -3,9 +3,21 @@
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { billingServer } from '../../my-agent/cloud-billing-agent/src/tools/server';
-import { TestCase, ValidationMessage } from './types';
-import { TEST_CASES } from './validation-constants';
+import { TestCase, TestSuite, ValidationMessage } from './types';
+import { TEST_CASES, TEST_SUITES } from './validation-constants';
 import { SYSTEM_PROMPT, MODEL } from './constants';
+
+export type ValidSuite = TestSuite | 'all';
+
+/**
+ * Get tests for a specific suite or all tests
+ */
+export function getTestsForSuite(suite: ValidSuite): TestCase[] {
+  if (suite === 'all') {
+    return TEST_CASES;
+  }
+  return TEST_SUITES[suite] || [];
+}
 
 /**
  * Check if a response passes the test criteria
@@ -150,11 +162,12 @@ async function* runSingleTest(
 }
 
 /**
- * Run all validation tests and yield progress events
+ * Run validation tests for a specific suite and yield progress events
  */
-export async function* runValidation(): AsyncGenerator<ValidationMessage> {
-  for (let i = 0; i < TEST_CASES.length; i++) {
-    yield* runSingleTest(TEST_CASES[i], i);
+export async function* runValidation(suite: ValidSuite = 'all'): AsyncGenerator<ValidationMessage> {
+  const tests = getTestsForSuite(suite);
+  for (let i = 0; i < tests.length; i++) {
+    yield* runSingleTest(tests[i], i);
   }
   yield { type: 'done' };
 }

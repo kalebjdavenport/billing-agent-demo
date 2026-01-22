@@ -1,14 +1,49 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { ValidationMessage, TestState, ValidationState, TestStep } from '@/lib/agent/types';
-import { TEST_CASES, STEP_NAMES } from '@/lib/agent/validation-constants';
+import { ValidationMessage, TestState, ValidationState, TestStep, TestSuite } from '@/lib/agent/types';
+import { TEST_SUITES, STEP_NAMES, SUITE_DESCRIPTIONS } from '@/lib/agent/validation-constants';
+
+// Valid suite options including 'all'
+export type ValidSuite = TestSuite | 'all';
+
+// Suite info for UI
+export interface SuiteInfo {
+  id: ValidSuite;
+  label: string;
+  description: string;
+  count: number;
+}
+
+// Get all suite options with metadata
+export function getSuiteOptions(): SuiteInfo[] {
+  const allCount = Object.values(TEST_SUITES).reduce((sum, tests) => sum + tests.length, 0);
+
+  return [
+    { id: 'all', label: 'All Tests', description: 'Run all test suites', count: allCount },
+    { id: 'core', label: 'Core', description: SUITE_DESCRIPTIONS.core, count: TEST_SUITES.core.length },
+    { id: 'codegen', label: 'Codegen', description: SUITE_DESCRIPTIONS.codegen, count: TEST_SUITES.codegen.length },
+    { id: 'security', label: 'Security', description: SUITE_DESCRIPTIONS.security, count: TEST_SUITES.security.length },
+    { id: 'boundaries', label: 'Boundaries', description: SUITE_DESCRIPTIONS.boundaries, count: TEST_SUITES.boundaries.length },
+  ];
+}
 
 /**
- * Create initial test state from test cases
+ * Get tests for a specific suite
  */
-function createInitialTestState(): TestState[] {
-  return TEST_CASES.map((tc) => ({
+function getTestsForSuite(suite: ValidSuite) {
+  if (suite === 'all') {
+    return Object.values(TEST_SUITES).flat();
+  }
+  return TEST_SUITES[suite] || [];
+}
+
+/**
+ * Create initial test state from test cases for a suite
+ */
+function createInitialTestState(suite: ValidSuite): TestState[] {
+  const tests = getTestsForSuite(suite);
+  return tests.map((tc) => ({
     name: tc.name,
     query: tc.query,
     status: 'pending',
@@ -22,9 +57,9 @@ function createInitialTestState(): TestState[] {
 /**
  * Create initial validation state
  */
-function createInitialState(): ValidationState {
+function createInitialState(suite: ValidSuite): ValidationState {
   return {
-    tests: createInitialTestState(),
+    tests: createInitialTestState(suite),
     currentTestIndex: -1,
     isRunning: false,
     passedCount: 0,
@@ -34,6 +69,8 @@ function createInitialState(): ValidationState {
 
 interface UseValidationStreamReturn {
   state: ValidationState;
+  selectedSuite: ValidSuite;
+  setSelectedSuite: (suite: ValidSuite) => void;
   runValidation: () => Promise<void>;
   reset: () => void;
 }
@@ -42,8 +79,16 @@ interface UseValidationStreamReturn {
  * React hook for running validation tests with real-time streaming updates.
  */
 export function useValidationStream(): UseValidationStreamReturn {
-  const [state, setState] = useState<ValidationState>(createInitialState);
+  const [selectedSuite, setSelectedSuiteState] = useState<ValidSuite>('all');
+  const [state, setState] = useState<ValidationState>(() => createInitialState('all'));
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const setSelectedSuite = useCallback((suite: ValidSuite) => {
+    // Don't allow changing suite while running
+    if (state.isRunning) return;
+    setSelectedSuiteState(suite);
+    setState(createInitialState(suite));
+  }, [state.isRunning]);
 
   const runValidation = useCallback(async () => {
     // Abort any existing request
@@ -54,7 +99,7 @@ export function useValidationStream(): UseValidationStreamReturn {
 
     // Reset state and start running
     setState({
-      tests: createInitialTestState(),
+      tests: createInitialTestState(selectedSuite),
       currentTestIndex: -1,
       isRunning: true,
       passedCount: 0,
@@ -64,6 +109,8 @@ export function useValidationStream(): UseValidationStreamReturn {
     try {
       const response = await fetch('/api/validate', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suite: selectedSuite }),
         signal: abortControllerRef.current.signal,
       });
 
@@ -113,17 +160,17 @@ export function useValidationStream(): UseValidationStreamReturn {
       setState((prev) => ({ ...prev, isRunning: false }));
       abortControllerRef.current = null;
     }
-  }, []);
+  }, [selectedSuite]);
 
   const reset = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    setState(createInitialState());
-  }, []);
+    setState(createInitialState(selectedSuite));
+  }, [selectedSuite]);
 
-  return { state, runValidation, reset };
+  return { state, selectedSuite, setSelectedSuite, runValidation, reset };
 }
 
 /**

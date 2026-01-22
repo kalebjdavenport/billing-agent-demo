@@ -1,11 +1,12 @@
 'use client';
 
-import { useValidationStream } from '@/hooks/useValidationStream';
+import { useValidationStream, getSuiteOptions } from '@/hooks/useValidationStream';
 import { ValidationHeader } from './ValidationHeader';
 import { TestCard } from './TestCard';
 
 export function TestRunner() {
-  const { state, runValidation, reset } = useValidationStream();
+  const { state, selectedSuite, setSelectedSuite, runValidation, reset } = useValidationStream();
+  const suiteOptions = getSuiteOptions();
 
   return (
     <div className="flex flex-col h-screen" style={{ background: 'var(--background)' }}>
@@ -14,75 +15,54 @@ export function TestRunner() {
         passedCount={state.passedCount}
         failedCount={state.failedCount}
         totalCount={state.tests.length}
+        selectedSuite={selectedSuite}
+        suiteOptions={suiteOptions}
+        onSuiteChange={setSelectedSuite}
         onRun={runValidation}
         onReset={reset}
       />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          {/* Empty state */}
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          {/* Test preview - show tests before running */}
           {!state.isRunning && state.passedCount === 0 && state.failedCount === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 animate-fade-in">
-              <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 animate-scale-in"
-                style={{
-                  background: 'linear-gradient(135deg, var(--user-message-bg) 0%, var(--surface) 100%)',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                }}
-              >
-                <svg
-                  className="w-10 h-10"
-                  style={{ color: 'var(--accent)' }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h2
-                className="text-xl font-semibold mb-2 animate-slide-up stagger-1"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                Ready to validate
-              </h2>
-              <p
-                className="text-sm mb-6 text-center max-w-md animate-slide-up stagger-2"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Run the E2E test suite to verify agent behavior. Each test will show real-time progress
-                including checklist steps, tool calls, and reasoning.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center animate-slide-up stagger-3">
-                {state.tests.slice(0, 3).map((test) => (
-                  <span
-                    key={test.name}
-                    className="text-xs px-3 py-1.5 rounded-full"
-                    style={{
-                      background: 'var(--user-message-bg)',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    {test.name}
-                  </span>
-                ))}
-                <span
-                  className="text-xs px-3 py-1.5 rounded-full"
+            <div className="space-y-3 animate-fade-in">
+              {state.tests.map((test, index) => (
+                <div
+                  key={test.name}
+                  className="p-4 rounded-lg border"
                   style={{
-                    background: 'var(--user-message-bg)',
-                    color: 'var(--text-muted)',
-                    border: '1px solid var(--border)',
+                    background: 'var(--surface)',
+                    borderColor: 'var(--border)',
                   }}
                 >
-                  +{state.tests.length - 3} more
-                </span>
-              </div>
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-medium"
+                      style={{
+                        background: 'var(--user-message-bg)',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3
+                        className="text-sm font-medium mb-1"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {test.name}
+                      </h3>
+                      <p
+                        className="text-sm"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        &ldquo;{test.query}&rdquo;
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
