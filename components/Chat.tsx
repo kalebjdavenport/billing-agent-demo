@@ -86,7 +86,7 @@ export function Chat() {
       )}
 
       {/* Messages */}
-      <MessageList messages={messages} isStreaming={isStreaming} />
+      <MessageList messages={messages} isStreaming={isStreaming} onSendMessage={sendMessage} />
 
       {/* Input */}
       <ChatInput

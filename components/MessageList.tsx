@@ -8,9 +8,10 @@ import { ChatMessage } from '@/lib/agent/types';
 interface MessageListProps {
   messages: ChatMessage[];
   isStreaming?: boolean;
+  onSendMessage?: (message: string) => void;
 }
 
-export function MessageList({ messages, isStreaming = false }: MessageListProps) {
+export function MessageList({ messages, isStreaming = false, onSendMessage }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,9 +60,10 @@ export function MessageList({ messages, isStreaming = false }: MessageListProps)
           {/* Example prompts */}
           <div className="flex flex-wrap gap-2 justify-center animate-slide-up stagger-3">
             {['Total spend last month?', 'Show EC2 costs', 'Any pending charges?'].map((prompt) => (
-              <span
+              <button
                 key={prompt}
-                className="text-xs px-3 py-1.5 rounded-full transition-smooth"
+                onClick={() => onSendMessage?.(prompt)}
+                className="text-xs px-3 py-1.5 rounded-full transition-smooth btn-lift cursor-pointer"
                 style={{
                   background: 'var(--user-message-bg)',
                   color: 'var(--text-secondary)',
@@ -69,7 +71,7 @@ export function MessageList({ messages, isStreaming = false }: MessageListProps)
                 }}
               >
                 {prompt}
-              </span>
+              </button>
             ))}
           </div>
         </div>
