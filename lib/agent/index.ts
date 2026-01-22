@@ -24,6 +24,7 @@ export async function* runAgentQuery(prompt: string): AsyncGenerator<AgentMessag
       model: MODEL,
       allowedTools: ['mcp__billing__*'],
       permissionMode: 'bypassPermissions',
+      maxTurns: 5, // Prevent infinite tool loops
     },
   })) {
     if (message.type === 'assistant') {

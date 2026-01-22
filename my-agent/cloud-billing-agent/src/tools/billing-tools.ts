@@ -10,8 +10,8 @@ import {
 } from "../data/transactions";
 import { queryTransactionsSchema, getBillingSummarySchema } from "./schemas";
 
-// Maximum rows to display before truncating
-const MAX_TABLE_ROWS = 15;
+// Maximum rows to display before truncating (all data is still fetched internally)
+const MAX_TABLE_ROWS = 8;
 
 // Helper to format transactions as a markdown table (with truncation)
 function formatTransactionsTable(txs: BillingTransaction[]): string {
