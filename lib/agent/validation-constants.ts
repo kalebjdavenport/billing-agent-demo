@@ -71,7 +71,40 @@ const CODEGEN_TESTS: TestCase[] = [
     name: 'Generate code for EC2 calculation',
     query: 'Show me JavaScript code to calculate my total EC2 spend',
     // Should generate code with filter/reduce pattern
-    expectedContains: ['filter', 'transactions', 'EC2', 'amount'],
+    expectedContains: ['filter', 'transactions', 'EC2', 'amount', 'reduce'],
+    expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
+  },
+  {
+    suite: 'codegen',
+    name: 'Generate code for monthly total',
+    query: 'Generate code to calculate my total spending for December 2025',
+    // Should generate date-filtered code
+    expectedContains: ['filter', 'transactions', 'date', 'reduce', 'amount'],
+    expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
+  },
+  {
+    suite: 'codegen',
+    name: 'Generate code for pending charges',
+    query: 'What JavaScript code would I use to find all pending charges?',
+    // Should generate status filter code
+    expectedContains: ['filter', 'transactions', 'pending', 'status'],
+    expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
+  },
+  {
+    suite: 'codegen',
+    name: 'Code analysis - explain generated code',
+    query: 'Show me code to calculate EC2 spend, then explain what that code does',
+    // Should generate code AND analyze it
+    expectedContains: ['filter', 'transactions', 'EC2', 'reduce', 'calculates', 'step'],
+    expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
+  },
+  {
+    suite: 'codegen',
+    name: 'Code analysis - review code quality',
+    query: 'Generate code to sum all S3 charges, then review the code for any issues',
+    // Should generate code AND provide analysis/review
+    expectedContains: ['filter', 'S3', 'reduce', 'code', 'review', 'issue'],
+    expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
   },
 ];
 

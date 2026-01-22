@@ -6,6 +6,7 @@ import { billingServer } from '../../my-agent/cloud-billing-agent/src/tools/serv
 import { TestCase, TestSuite, ValidationMessage } from './types';
 import { TEST_CASES, TEST_SUITES } from './validation-constants';
 import { SYSTEM_PROMPT, MODEL } from './constants';
+import { validateGeneratedCode, hasCodeAnalysis } from './code-validator';
 
 export type ValidSuite = TestSuite | 'all';
 
@@ -25,8 +26,42 @@ export function getTestsForSuite(suite: ValidSuite): TestCase[] {
 export function checkResult(
   response: string,
   expectedContains: string[],
-  expectedNotContains?: string[]
+  expectedNotContains?: string[],
+  suite?: TestSuite
 ): { passed: boolean; reason?: string } {
+  // For codegen tests, also validate the generated code
+  if (suite === 'codegen') {
+    const codeValidation = validateGeneratedCode(response);
+    
+    // Check if code was generated
+    if (!codeValidation.hasCodeBlock) {
+      return {
+        passed: false,
+        reason: 'No code block found in response. Expected JavaScript code generation.',
+      };
+    }
+    
+    // Check syntax
+    if (!codeValidation.isValid) {
+      const syntaxErrors = codeValidation.syntaxErrors?.join('; ') || 'Unknown syntax errors';
+      return {
+        passed: false,
+        reason: `Generated code has syntax errors: ${syntaxErrors}`,
+      };
+    }
+    
+    // For code analysis tests, check if analysis is present
+    const testName = expectedContains.join(' ').toLowerCase();
+    if (testName.includes('explain') || testName.includes('review') || testName.includes('analysis')) {
+      if (!hasCodeAnalysis(response)) {
+        return {
+          passed: false,
+          reason: 'Code was generated but no analysis/explanation was provided',
+        };
+      }
+    }
+  }
+  
   // Check that at least one expected string is present
   const hasExpected = expectedContains.some((expected) => response.includes(expected));
 
@@ -137,7 +172,7 @@ async function* runSingleTest(
     yield { type: 'step', testIndex, stepIndex: 3, status: 'running' };
 
     // Validate the result
-    const result = checkResult(response, testCase.expectedContains, testCase.expectedNotContains);
+    const result = checkResult(response, testCase.expectedContains, testCase.expectedNotContains, testCase.suite);
 
     yield { type: 'step', testIndex, stepIndex: 3, status: result.passed ? 'completed' : 'failed' };
     yield {
