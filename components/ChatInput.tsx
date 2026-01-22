@@ -57,7 +57,7 @@ export function ChatInput({
         <form onSubmit={handleSubmit}>
           <div
             className={`
-              relative flex items-end gap-2 rounded-2xl border px-4 py-3
+              relative flex items-center gap-2 rounded-2xl border px-4 py-3
               transition-all duration-200 input-glow
             `}
             style={{

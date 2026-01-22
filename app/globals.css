@@ -342,3 +342,14 @@ details[open] summary ~ * {
 .status-running {
   animation: pulse-subtle 1.5s ease-in-out infinite;
 }
+
+/* Textarea placeholder styling */
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+textarea:focus::placeholder {
+  opacity: 0.6;
+}
