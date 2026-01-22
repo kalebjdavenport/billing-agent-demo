@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useAgentStream } from '@/hooks/useAgentStream';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
@@ -39,21 +40,37 @@ export function Chat() {
               </h1>
             </div>
           </div>
-          {messages.length > 0 && (
-            <button
-              onClick={clearMessages}
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <button
+                onClick={clearMessages}
+                className="text-sm px-3 py-1.5 rounded-lg transition-smooth btn-lift flex items-center gap-1.5"
+                style={{
+                  color: 'var(--text-secondary)',
+                  background: 'var(--user-message-bg)',
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                </svg>
+                New
+              </button>
+            )}
+            <Link
+              href="/validate"
               className="text-sm px-3 py-1.5 rounded-lg transition-smooth btn-lift flex items-center gap-1.5"
               style={{
-                color: 'var(--text-secondary)',
-                background: 'var(--user-message-bg)',
+                color: 'white',
+                background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)',
+                boxShadow: '0 2px 6px rgba(217, 119, 87, 0.25)',
               }}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              New
-            </button>
-          )}
+              Validate
+            </Link>
+          </div>
         </div>
       </header>
 

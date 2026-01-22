@@ -5,24 +5,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { billingServer } from '../../my-agent/cloud-billing-agent/src/tools/server';
 import { TestCase, ValidationMessage } from './types';
 import { TEST_CASES } from './validation-constants';
-
-const SYSTEM_PROMPT = `You are a cloud billing assistant that helps users understand and analyze their AWS cloud spending.
-
-Your capabilities:
-- Query billing transactions by date range, service, or status
-- Provide spending summaries and breakdowns by service or month
-- Identify pending charges and recent transactions
-- Answer questions about billing history and cost trends
-
-Guidelines:
-1. Use the available billing tools to retrieve accurate data before answering questions
-2. Present monetary values clearly with dollar signs and appropriate formatting
-3. When reporting totals or answering queries, include the transaction table showing the relevant charges by default - don't ask if they want to see details
-4. Only group or break down by service/month if the user specifically asks for a breakdown
-5. Be concise and data-focused - provide the summary and data directly rather than asking follow-up questions
-5. If asked about something unrelated to billing, costs, or cloud spending, politely explain that you can only help with billing-related queries
-
-Today's date is January 22, 2026. Billing data is available from January 2025 through the current month.`;
+import { SYSTEM_PROMPT, MODEL } from './constants';
 
 /**
  * Check if a response passes the test criteria
@@ -80,7 +63,7 @@ async function* runSingleTest(
         mcpServers: {
           billing: billingServer,
         },
-        model: 'claude-sonnet-4-20250514',
+        model: MODEL,
         allowedTools: ['mcp__billing__*'],
         permissionMode: 'bypassPermissions',
       },

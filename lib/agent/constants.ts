@@ -1,7 +1,9 @@
-import { query } from "@anthropic-ai/claude-agent-sdk";
-import { billingServer } from "./tools/server.js";
+// lib/agent/constants.ts
+// Shared constants for the billing agent
 
-const SYSTEM_PROMPT = `You are a cloud billing assistant. Your ONLY function is to help users understand and analyze their AWS cloud spending.
+export const CURRENT_DATE = 'January 22, 2026';
+
+export const SYSTEM_PROMPT = `You are a cloud billing assistant. Your ONLY function is to help users understand and analyze their AWS cloud spending.
 
 IMPORTANT: You can ONLY answer questions about billing, costs, charges, transactions, and cloud spending. You MUST politely decline ANY request that is not directly related to billing data. This includes:
 - General knowledge questions
@@ -30,33 +32,6 @@ Guidelines:
    - After showing pending charges: "Would you like to see your recent processed transactions?"
    Keep follow-up suggestions brief and billing-related.
 
-Today's date is January 22, 2026. Billing data is available from January 2025 through the current month.`;
+Today's date is ${CURRENT_DATE}. Billing data is available from January 2025 through the current month.`;
 
-const userQuestion = process.argv[2] || "What was my total spend last month?";
-
-console.log(`\nQuestion: ${userQuestion}\n`);
-console.log("---");
-
-async function main() {
-  for await (const message of query({
-    prompt: userQuestion,
-    options: {
-      systemPrompt: SYSTEM_PROMPT,
-      mcpServers: {
-        billing: billingServer,
-      },
-      allowedTools: ["mcp__billing__*"],
-      permissionMode: "bypassPermissions",
-    },
-  })) {
-    if (message.type === "assistant") {
-      for (const block of message.message.content) {
-        if (block.type === "text") {
-          console.log(block.text);
-        }
-      }
-    }
-  }
-}
-
-main().catch(console.error);
+export const MODEL = 'claude-sonnet-4-20250514';

@@ -156,7 +156,7 @@ export const transactions: BillingTransaction[] = [
 // - Data range: January 2025 - January 2026
 // - Total 2025: ~$10,980
 // - January 2026 MTD: ~$1,010
-// - Pending charges: 2 transactions (Sep 2025: $65, Jan 2026: $75)
+// - Pending charges: 3 transactions (May 2025: $68, Sep 2025: $65, Jan 2026: $75)
 // - Services: EC2, RDS, S3, Lambda, CloudWatch, VPC, CloudFront, API Gateway, ElastiCache
 // ============================================
 

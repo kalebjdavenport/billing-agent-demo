@@ -10,7 +10,7 @@
     "test": "tsx tests/verify.ts"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.12",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.15",
     "zod": "^4.0.0"
   },
   "devDependencies": {
