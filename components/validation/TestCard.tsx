@@ -47,8 +47,9 @@ export function TestCard({ test, index }: TestCardProps) {
       style={{
         borderColor: isActive ? 'var(--accent)' : 'var(--border)',
         background: 'var(--surface)',
-        ringColor: isActive ? 'var(--accent)' : 'transparent',
         animationDelay: `${index * 50}ms`,
+        // @ts-expect-error CSS custom property for ring color
+        '--tw-ring-color': isActive ? 'var(--accent)' : 'transparent',
       }}
     >
       {/* Header */}

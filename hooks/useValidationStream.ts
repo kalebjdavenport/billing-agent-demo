@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { ValidationMessage, TestState, ValidationState, TestStep } from '@/lib/agent/types';
-import { TEST_CASES, STEP_NAMES } from '@/lib/agent/validation';
+import { TEST_CASES, STEP_NAMES } from '@/lib/agent/validation-constants';
 
 /**
  * Create initial test state from test cases
