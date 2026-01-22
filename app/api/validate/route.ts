@@ -26,45 +26,80 @@ const VALID_SUITES = ['all', 'core', 'codegen', 'security', 'boundaries'] as con
  * - data: {"type":"done"}
  */
 export async function POST(request: Request) {
-  // Parse suite from request body
-  let suite: ValidSuite = 'all';
   try {
-    const body = await request.json().catch(() => ({}));
-    if (body.suite && VALID_SUITES.includes(body.suite)) {
-      suite = body.suite as ValidSuite;
-    }
-  } catch {
-    // Default to 'all' if parsing fails
-  }
-
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      try {
-        for await (const message of runValidation(suite)) {
-          const data = `data: ${JSON.stringify(message)}\n\n`;
-          controller.enqueue(encoder.encode(data));
-        }
-      } catch (error) {
-        // Send error as SSE event
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        const errorData = `data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`;
-        controller.enqueue(encoder.encode(errorData));
-      } finally {
-        controller.close();
+    // Parse suite from request body
+    let suite: ValidSuite = 'all';
+    try {
+      const body = await request.json().catch(() => ({}));
+      if (body.suite && VALID_SUITES.includes(body.suite)) {
+        suite = body.suite as ValidSuite;
       }
-    },
-  });
+    } catch (error) {
+      // Default to 'all' if parsing fails
+    }
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  });
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const validationGenerator = runValidation(suite);
+          
+          for await (const message of validationGenerator) {
+            try {
+              const data = `data: ${JSON.stringify(message)}\n\n`;
+              controller.enqueue(encoder.encode(data));
+            } catch (enqueueError) {
+              // Continue processing other messages
+            }
+          }
+        } catch (error) {
+          // Send error as SSE event
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          const errorStack = error instanceof Error ? error.stack : undefined;
+          const errorData = `data: ${JSON.stringify({ 
+            type: 'error', 
+            error: errorMessage,
+            stack: errorStack 
+          })}\n\n`;
+          
+          try {
+            controller.enqueue(encoder.encode(errorData));
+          } catch (enqueueError) {
+            // Ignore enqueue errors
+          }
+        } finally {
+          try {
+            controller.close();
+          } catch (closeError) {
+            // Ignore close errors
+          }
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
+    });
+  } catch (error) {
+    // Catch any synchronous errors in the route handler
+    return new Response(
+      JSON.stringify({ 
+        error: 'Failed to process validation request',
+        details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
 }
 
 /**

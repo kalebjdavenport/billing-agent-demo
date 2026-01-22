@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ChatMessage } from '@/lib/agent/types';
+import { extractCodeFromMarkdown } from '@/lib/code-executor';
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -146,7 +148,14 @@ function MessageRow({ message, isStreaming, isLatest }: MessageRowProps) {
             </div>
           ) : (
             <div className="prose-chat" style={{ color: 'var(--text-primary)' }}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code: CodeBlockRenderer,
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
             </div>
           )
         ) : isCurrentlyStreaming ? (
@@ -264,6 +273,60 @@ function MessageRow({ message, isStreaming, isLatest }: MessageRowProps) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function CodeBlockRenderer({ node, inline, className, children, ...props }: any) {
+  const router = useRouter();
+  
+  if (inline) {
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    );
+  }
+
+  const match = /language-(\w+)/.exec(className || '');
+  const language = match ? match[1] : '';
+  const codeString = String(children).replace(/\n$/, '');
+  
+  // Only show "Run in Sandbox" for JavaScript/JS code blocks
+  const isJavaScript = language === 'javascript' || language === 'js' || (!language && (codeString.includes('transactions') || codeString.includes('filter') || codeString.includes('reduce')));
+  
+  const handleRunInSandbox = () => {
+    // Store code in sessionStorage and navigate to sandbox
+    sessionStorage.setItem('sandboxCode', codeString);
+    router.push('/sandbox');
+  };
+
+  return (
+    <div className="relative my-4 rounded-lg overflow-hidden" style={{ background: 'var(--code-bg, #1e1e1e)' }}>
+      {isJavaScript && (
+        <div className="absolute top-2 right-2 z-10">
+          <button
+            onClick={handleRunInSandbox}
+            className="text-xs px-2 py-1 rounded flex items-center gap-1.5 transition-smooth hover:opacity-90"
+            style={{
+              background: 'rgba(217, 119, 87, 0.9)',
+              color: 'white',
+            }}
+            title="Run this code in the sandbox"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Run in Sandbox
+          </button>
+        </div>
+      )}
+      <pre className="p-4 overflow-x-auto" style={{ color: 'var(--code-text, #d4d4d4)' }}>
+        <code className={className} {...props}>
+          {children}
+        </code>
+      </pre>
     </div>
   );
 }

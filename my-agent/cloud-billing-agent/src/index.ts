@@ -22,6 +22,11 @@ PREDICTIONS NOT SUPPORTED: If a user asks you to predict, forecast, or estimate 
 
 DATA RANGE: Billing data is only available from January 2025 onward. If a user asks about dates before January 2025 (e.g., December 2024 or earlier), respond IMMEDIATELY without calling tools: "I don't have billing data before January 2025. Would you like to see your charges starting from January 2025?" Do NOT report $0 for dates outside the available range.
 
+MISSING DATA / NO RESULTS: NEVER report $0 or show empty transaction tables when data doesn't exist. Instead, clearly explain that no data is available.
+- If a user asks about a service that doesn't exist in the billing data (e.g., DynamoDB, Redshift, ECS), respond IMMEDIATELY without calling tools: "I don't have any billing data for [Service Name]. Your current services with billing data are: EC2, RDS, S3, Lambda, CloudWatch..." Only use list_services if you need to confirm which services exist.
+- If a tool call returns empty results, explain that no data was found rather than showing $0. Say: "I couldn't find any transactions matching that criteria" or "There are no charges for [service/date/status] in your billing data."
+- When you cannot find data, explain the absence clearly - do not use tool calls just to confirm absence. Only call tools if you're uncertain whether data exists.
+
 Guidelines:
 1. Use the available billing tools to retrieve accurate data before answering questions
 2. Present monetary values clearly with dollar signs and appropriate formatting
@@ -33,10 +38,11 @@ Guidelines:
    - After showing service costs: "Would you like to compare this to previous months?"
    - After showing pending charges: "Would you like to see your recent processed transactions?"
    Keep follow-up suggestions brief and billing-related.
-7. EMPTY RESULTS: When a query returns no data:
-   - If querying a service with no transactions (e.g., DynamoDB), clearly state there is no billing data for that service
-   - Use the list_services tool to show what services DO have billing data
-   - Be helpful: "I don't have any DynamoDB charges in your billing data. Your current services are: EC2, RDS, S3..."
+7. MISSING DATA / NO RESULTS: 
+   - NEVER report $0 or show empty transaction tables when data doesn't exist. Instead, clearly explain that no data is available.
+   - If a user asks about a service that you know doesn't exist in the billing data (e.g., DynamoDB, Redshift, ECS), respond IMMEDIATELY without calling tools: "I don't have any billing data for [Service Name]. Your current services with billing data are: EC2, RDS, S3, Lambda, CloudWatch..." Use list_services only if you need to confirm which services exist.
+   - If a tool call returns empty results (no transactions found), explain that no data was found rather than showing $0 or an empty table. Say: "I couldn't find any transactions matching that criteria" or "There are no charges for [service/date/status] in your billing data."
+   - When you cannot find data, explain the absence clearly - do not use tool calls just to confirm absence. Only call tools if you're uncertain whether data exists.
 8. CODE GENERATION (on request only):
    - DEFAULT: Always use billing tools for queries - they are fast and reliable
    - EXCEPTION: When a user asks "how did you calculate that", "show me the code", "how would I compute this", or similar - generate JavaScript code that demonstrates the calculation
@@ -48,9 +54,6 @@ Guidelines:
 Billing data is available from January 2025 through the current month.`;
 
 const userQuestion = process.argv[2] || "What was my total spend last month?";
-
-console.log(`\nQuestion: ${userQuestion}\n`);
-console.log("---");
 
 async function main() {
   for await (const message of query({
@@ -67,11 +70,14 @@ async function main() {
     if (message.type === "assistant") {
       for (const block of message.message.content) {
         if (block.type === "text") {
-          console.log(block.text);
+          process.stdout.write(block.text);
         }
       }
     }
   }
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  process.stderr.write(String(error));
+  process.exit(1);
+});

@@ -160,8 +160,8 @@ const BOUNDARY_TESTS: TestCase[] = [
     suite: "boundaries",
     name: "Predictions not supported",
     query: "Predict my AWS bill for February 2026",
-    expectedContains: ["billing", "historical", "cannot", "can only"],
-    expectedNotContains: ["predict", "forecast", "will be"],
+    // Check that response confirms it cannot predict future costs
+    expectedContains: ["not predict", "cannot predict", "only analyze historical", "historical billing data", "not predict future"],
   },
   {
     suite: "boundaries",

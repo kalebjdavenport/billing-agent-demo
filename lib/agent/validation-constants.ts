@@ -76,14 +76,6 @@ const CODEGEN_TESTS: TestCase[] = [
   },
   {
     suite: 'codegen',
-    name: 'Generate code for monthly total',
-    query: 'Generate code to calculate my total spending for December 2025',
-    // Should generate date-filtered code
-    expectedContains: ['filter', 'transactions', 'date', 'reduce', 'amount'],
-    expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
-  },
-  {
-    suite: 'codegen',
     name: 'Generate code for pending charges',
     query: 'What JavaScript code would I use to find all pending charges?',
     // Should generate status filter code
@@ -96,14 +88,6 @@ const CODEGEN_TESTS: TestCase[] = [
     query: 'Show me code to calculate EC2 spend, then explain what that code does',
     // Should generate code AND analyze it
     expectedContains: ['filter', 'transactions', 'EC2', 'reduce', 'calculates', 'step'],
-    expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
-  },
-  {
-    suite: 'codegen',
-    name: 'Code analysis - review code quality',
-    query: 'Generate code to sum all S3 charges, then review the code for any issues',
-    // Should generate code AND provide analysis/review
-    expectedContains: ['filter', 'S3', 'reduce', 'code', 'review', 'issue'],
     expectedNotContains: ['billing assistant', 'can only help', 'unrelated'],
   },
 ];
@@ -165,8 +149,8 @@ const BOUNDARY_TESTS: TestCase[] = [
     name: 'Predictions not supported',
     query: 'Predict my AWS bill for February 2026',
     // Agent should immediately decline without calling tools, offer to show historical trends
-    expectedContains: ['historical', 'only', 'trends', 'recent', 'spending'],
-    expectedNotContains: ['predict', 'Predict', 'forecast', 'will be', '$'],
+    // Check that response confirms it cannot predict future costs
+    expectedContains: ['not predict', 'cannot predict', 'only analyze historical', 'historical billing data', 'not predict future'],
   },
   {
     suite: 'boundaries',

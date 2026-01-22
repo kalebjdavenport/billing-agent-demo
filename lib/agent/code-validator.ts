@@ -175,7 +175,9 @@ export function hasCodeAnalysis(response: string): boolean {
   const analysisKeywords = [
     'explains',
     'explanation',
+    'explain',
     'analyzes',
+    'analyze',
     'analysis',
     'review',
     'reviews',

@@ -11,7 +11,7 @@ interface ValidationHeaderProps {
   selectedSuite: ValidSuite;
   suiteOptions: SuiteInfo[];
   onSuiteChange: (suite: ValidSuite) => void;
-  onRun: () => void;
+  onRun: () => Promise<void>;
   onReset: () => void;
 }
 
@@ -101,7 +101,12 @@ export function ValidationHeader({
             {suiteOptions.map((suite) => (
               <button
                 key={suite.id}
-                onClick={() => onSuiteChange(suite.id)}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSuiteChange(suite.id);
+                }}
                 disabled={isRunning}
                 className="text-sm px-4 py-2 rounded-lg transition-smooth disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
@@ -193,7 +198,12 @@ export function ValidationHeader({
             <div className="flex items-center gap-2">
               {hasResults && !isRunning && (
                 <button
-                  onClick={onReset}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onReset();
+                  }}
                   className="text-sm px-3 py-1.5 rounded-lg transition-smooth btn-lift flex items-center gap-1.5"
                   style={{
                     color: 'var(--text-secondary)',
@@ -213,7 +223,30 @@ export function ValidationHeader({
                 </button>
               )}
               <button
-                onClick={onRun}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  if (!onRun) {
+                    return;
+                  }
+                  
+                  if (isRunning) {
+                    return;
+                  }
+                  
+                  try {
+                    const result = onRun();
+                    if (result && typeof result.catch === 'function') {
+                      result.catch(() => {
+                        // Error handling is done in the hook
+                      });
+                    }
+                  } catch (error) {
+                    // Error handling is done in the hook
+                  }
+                }}
                 disabled={isRunning}
                 className="text-sm px-4 py-1.5 rounded-lg transition-smooth btn-lift flex items-center gap-1.5 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{

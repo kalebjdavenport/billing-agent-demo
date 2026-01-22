@@ -156,6 +156,16 @@ export function useValidationStream(): UseValidationStreamReturn {
         return;
       }
       console.error('Validation error:', err);
+      // Set error state so user knows something went wrong
+      setState((prev) => ({
+        ...prev,
+        isRunning: false,
+        tests: prev.tests.map((test, idx) =>
+          idx === prev.currentTestIndex && prev.currentTestIndex >= 0
+            ? { ...test, status: 'failed', failureReason: err instanceof Error ? err.message : 'Unknown error' }
+            : test
+        ),
+      }));
     } finally {
       setState((prev) => ({ ...prev, isRunning: false }));
       abortControllerRef.current = null;

@@ -89,11 +89,12 @@ The UI shows the agent's work through tool call cards rather than verbose text, 
 
 - Interactive chat interface for billing queries
 - Real-time streaming responses via Server-Sent Events
-- **Hybrid mode**: Tools by default, code generation on request
+- **Code Sandbox**: Interactive JavaScript editor to test billing calculations with live transaction data
 - Automated validation test suite with multiple test suites
 - Support for AWS billing data queries (EC2, RDS, S3, Lambda, CloudWatch, etc.)
 - Tool-based architecture for accurate data retrieval
 - Prompt injection defense
+- Code execution engine for safe JavaScript evaluation in isolated environment
 
 ## Prerequisites
 
@@ -121,6 +122,7 @@ The UI shows the agent's work through tool call cards rather than verbose text, 
 
 - `/` - Main chat interface
 - `/validate` - Automated validation test runner
+- `/sandbox` - Interactive code sandbox for testing billing calculations
 
 ## Project Structure
 
@@ -128,19 +130,24 @@ The UI shows the agent's work through tool call cards rather than verbose text, 
 ├── app/                    # Next.js app router
 │   ├── api/agent/         # Agent streaming API endpoint
 │   ├── api/validate/      # Validation test API endpoint
+│   ├── sandbox/           # Code sandbox page
 │   └── validate/          # Validation test UI page
 ├── components/            # React UI components
 │   ├── Chat.tsx          # Main chat container
 │   ├── ChatInput.tsx     # Message input with keyboard shortcuts
+│   ├── CodeSandbox.tsx   # Interactive code editor and executor
 │   ├── MessageList.tsx   # Message display with markdown
 │   └── validation/       # Validation test components
 ├── hooks/                 # Custom React hooks
 │   ├── useAgentStream.ts # SSE stream handling for chat
 │   └── useValidationStream.ts
-├── lib/agent/            # Agent configuration
-│   ├── constants.ts      # Shared prompts and config
-│   ├── types.ts          # TypeScript definitions
-│   └── validation.ts     # Test runner logic
+├── lib/                   # Core libraries
+│   ├── agent/            # Agent configuration
+│   │   ├── constants.ts  # Shared prompts and config
+│   │   ├── code-validator.ts # Code validation utilities
+│   │   ├── types.ts      # TypeScript definitions
+│   │   └── validation.ts # Test runner logic
+│   └── code-executor.ts  # Safe JavaScript code execution engine
 └── my-agent/             # Standalone agent package
     └── cloud-billing-agent/
 ```
@@ -220,39 +227,43 @@ Billing data spans January 2025 through January 2026. The agent can query:
 - Pending charges
 - Monthly summaries and breakdowns
 
-## Hybrid Mode: Tools + Code Generation
+## Code Sandbox
 
-The agent operates in **hybrid mode**—using tools by default for fast, reliable responses, but generating JavaScript code when users ask for transparency.
+The application includes an interactive code sandbox (`/sandbox`) where users can write and execute JavaScript code against live billing transaction data. This feature enables:
 
-| User Request | Agent Behavior |
-|--------------|----------------|
-| "What was my EC2 spend?" | Uses `query_transactions` tool → returns data table |
-| "How did you calculate that?" | Generates JavaScript code showing the logic |
-| "Show me code to find pending charges" | Generates filter/reduce code |
+- **Interactive Testing**: Write and test billing calculations in real-time
+- **Safe Execution**: Code runs in an isolated environment with restricted access
+- **Live Data**: Access to full transaction dataset
+- **Code Editor**: Syntax-highlighted editor with Monaco Editor support (falls back to simple textarea)
+- **Execution Results**: See output, errors, and execution time for your code
 
-### Example Code Generation
+### Code Executor
 
-When a user asks "show me code to calculate EC2 spend", the agent generates:
+The code executor (`lib/code-executor.ts`) provides a secure JavaScript execution environment that:
+- Restricts access to Node.js APIs and browser globals
+- Provides transaction data as a global variable
+- Captures console output and execution results
+- Measures execution time
+- Handles errors gracefully
+
+### Example Usage
 
 ```javascript
-transactions
+// Calculate total EC2 spending
+const ec2Total = transactions
   .filter(tx => tx.service.includes('EC2'))
-  .reduce((sum, tx) => sum + tx.amount, 0)
-```
+  .reduce((sum, tx) => sum + tx.amount, 0);
 
-This hybrid approach provides:
-- **Speed**: Tools execute instantly for common queries
-- **Transparency**: Users can see exactly how calculations work
-- **Education**: Users learn the data model and can modify code
+console.log('Total EC2 spend: $' + ec2Total.toFixed(2));
+```
 
 ## Validation Test Suites
 
-The agent includes a comprehensive validation system with 15 tests organized into 4 suites:
+The agent includes a comprehensive validation system with tests organized into multiple suites:
 
 | Suite | Tests | Description | Exit Code |
 |-------|-------|-------------|-----------|
 | `core` | 7 | Basic tool functionality | Fails build if any fail |
-| `codegen` | 1 | Code generation feature | Fails build if fails |
 | `security` | 4 | Prompt injection defense | Fails build if any fail |
 | `boundaries` | 3 | System limits and edge cases | Does not fail build |
 
@@ -283,9 +294,6 @@ npx tsx tests/verify.ts --help
 - Query by date, service, status
 - Monthly totals and breakdowns
 - List services, get date range
-
-**Codegen Tests** — Must pass. Validates hybrid mode:
-- Code generation produces filter/reduce patterns
 
 **Security Tests** — Must pass. Validates prompt injection defense:
 - Rejects jokes, recipes, general knowledge, coding help
