@@ -98,19 +98,6 @@ export function Chat() {
                 </button>
               )}
               <Link
-                href="/sandbox"
-                className="text-sm px-3 py-1.5 rounded-lg transition-smooth btn-lift flex items-center gap-1.5"
-                style={{
-                  color: 'var(--text-primary)',
-                  background: 'var(--user-message-bg)',
-                }}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                </svg>
-                Sandbox
-              </Link>
-              <Link
                 href="/validate"
                 className="text-sm px-3 py-1.5 rounded-lg transition-smooth btn-lift flex items-center gap-1.5"
                 style={{
